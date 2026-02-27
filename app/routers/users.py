@@ -1,0 +1,125 @@
+"""
+User endpoints — thin HTTP layer, delegates all logic to services.
+"""
+
+from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
+from fastapi.responses import JSONResponse
+
+from app.dependencies import get_db, get_document_parser, get_embedding_service, get_storage
+from app.domain.models import ResumeDownloadResponse, ResumeUploadResponse, UserProfile
+from app.ports.database_port import DatabasePort
+from app.ports.document_port import DocumentPort
+from app.ports.embedding_port import EmbeddingPort
+from app.ports.storage_port import StoragePort
+from app.services.auth_service import get_current_user
+from app.services.user_service import UserService
+
+router = APIRouter(prefix="/users", tags=["Users"])
+
+# Allowed resume file extensions
+_ALLOWED_EXTENSIONS = {".pdf", ".docx"}
+
+
+def _get_extension(filename: str | None) -> str:
+    """Extract and validate the file extension."""
+    if not filename:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Filename is required",
+        )
+    import os
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in _ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Only {', '.join(_ALLOWED_EXTENSIONS)} files are accepted",
+        )
+    return ext
+
+
+@router.get("/me", response_model=UserProfile)
+async def get_my_profile(
+    current_user: dict[str, Any] = Depends(get_current_user),
+):
+    """Return the authenticated user's profile."""
+    return UserProfile(**current_user)
+
+
+@router.post(
+    "/resume",
+    response_model=ResumeUploadResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def upload_resume(
+    file: UploadFile,
+    current_user: dict[str, Any] = Depends(get_current_user),
+    db: DatabasePort = Depends(get_db),
+    doc_parser: DocumentPort = Depends(get_document_parser),
+    emb: EmbeddingPort = Depends(get_embedding_service),
+    storage: StoragePort = Depends(get_storage),
+):
+    """Upload a PDF or DOCX resume → store original → parse → embed → save."""
+
+    _get_extension(file.filename)  # validate extension
+
+    file_bytes = await file.read()
+    if not file_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Empty file uploaded",
+        )
+
+    svc = UserService(db=db, doc_parser=doc_parser, embeddings=emb, storage=storage)
+
+    try:
+        chars = await svc.process_resume(
+            user_id=current_user["id"],
+            file_bytes=file_bytes,
+            file_name=file.filename,
+            content_type=file.content_type or "application/octet-stream",
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Resume processing failed: {exc}",
+        )
+
+    return ResumeUploadResponse(characters_extracted=chars)
+
+
+@router.get("/me/resume")
+async def download_resume(
+    current_user: dict[str, Any] = Depends(get_current_user),
+    db: DatabasePort = Depends(get_db),
+    doc_parser: DocumentPort = Depends(get_document_parser),
+    emb: EmbeddingPort = Depends(get_embedding_service),
+    storage: StoragePort = Depends(get_storage),
+):
+    """
+    Get a fresh, short-lived signed download URL for the user's resume.
+    Every request generates a new 15-minute URL — never cached.
+    """
+
+    svc = UserService(db=db, doc_parser=doc_parser, embeddings=emb, storage=storage)
+    url = await svc.get_resume_download_url(current_user["id"])
+
+    if not url:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No resume found. Upload one via POST /users/resume first.",
+        )
+
+    return JSONResponse(
+        content={
+            "download_url": url,
+            "expires_in_seconds": 900,
+        },
+        headers={"Cache-Control": "no-store"},
+    )
