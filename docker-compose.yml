@@ -1,0 +1,13 @@
+services:
+  backend:
+    build: .
+    container_name: ottobon-jobs-backend
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
