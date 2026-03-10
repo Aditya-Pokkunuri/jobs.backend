@@ -19,20 +19,20 @@ async def main():
 
     # 1. Delete old jobs
     print("[1/3] Deleting old jobs...")
-    result = client.table("jobs").select("id", count="exact").execute()
+    result = client.table("jobs_jobs").select("id", count="exact").execute()
     count = result.count if result.count is not None else len(result.data or [])
     print(f"  Found {count} jobs")
     if count > 0:
         # Clear related records first
         try:
-            client.table("chat_sessions").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
+            client.table("chat_sessions_jobs").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
         except Exception:
             pass
         try:
-            client.table("scraping_logs").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
+            client.table("scraping_logs_jobs").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
         except Exception:
             pass
-        client.table("jobs").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
+        client.table("jobs_jobs").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
         print(f"  Deleted {count} jobs")
 
     # 2. Scrape from all sources
@@ -55,7 +55,7 @@ async def main():
             print(f"  FAIL - {name}: {type(e).__name__}: {e}")
 
     # 3. Final count
-    result = client.table("jobs").select("id", count="exact").execute()
+    result = client.table("jobs_jobs").select("id", count="exact").execute()
     final = result.count if result.count is not None else len(result.data or [])
     print(f"\n[3/3] Done! Total jobs: {final}")
 

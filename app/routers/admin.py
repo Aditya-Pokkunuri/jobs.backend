@@ -202,7 +202,7 @@ async def _reenrich_unenriched_jobs(db: DatabasePort, ai: AIPort, emb: Embedding
 
     # Query all jobs missing any enrichment data
     result = (
-        db._client.table("jobs")
+        db._client.table("jobs_jobs")
         .select("id, title, company_name, prep_guide_generated, resume_guide_generated, embedding, status")
         .execute()
     )

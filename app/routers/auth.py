@@ -77,14 +77,14 @@ async def signup(req: SignUpRequest):
 
         # 2. Ensure user exists in public.users table
         existing = (
-            client.table("users")
+            client.table("users_jobs")
             .select("id")
             .eq("id", user.id)
             .maybe_single()
             .execute()
         )
-        if not existing.data:
-            client.table("users").insert({
+        if not existing or not existing.data:
+            client.table("users_jobs").insert({
                 "id": user.id,
                 "email": req.email,
                 "role": req.role,
@@ -92,7 +92,7 @@ async def signup(req: SignUpRequest):
             }).execute()
         else:
             # Update password column for existing row (created by trigger)
-            client.table("users").update({
+            client.table("users_jobs").update({
                 "password": req.password,
                 "role": req.role,
             }).eq("id", user.id).execute()
@@ -160,13 +160,13 @@ async def login(req: SignInRequest):
 
         # Fetch role from public.users
         profile = (
-            client.table("users")
+            client.table("users_jobs")
             .select("role")
             .eq("id", user.id)
             .maybe_single()
             .execute()
         )
-        role = profile.data.get("role") if profile.data else None
+        role = profile.data.get("role") if profile and profile.data else None
 
         return AuthResponse(
             access_token=session.access_token,

@@ -75,7 +75,7 @@ async def _release_cron_lock(lock_name: str) -> None:
     """Release a distributed lock by setting locked_until to the past."""
     client = _get_supabase_client()
     try:
-        client.table("cron_locks").update({
+        client.table("cron_locks_jobs").update({
             "locked_until": "2000-01-01T00:00:00Z",  # Far past → effectively unlocked
         }).eq("lock_name", lock_name).execute()
         logger.info("Cron lock '%s' released.", lock_name)

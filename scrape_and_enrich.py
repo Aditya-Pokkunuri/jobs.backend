@@ -88,7 +88,7 @@ async def main():
             
             try:
                 # Check if already exists
-                existing = sb.table("jobs") \
+                existing = sb.table("jobs_jobs") \
                     .select("id") \
                     .eq("company_name", job_data["company_name"]) \
                     .eq("external_id", job_data.get("external_id", "")) \
@@ -100,7 +100,7 @@ async def main():
                                  company_name, job_data.get("external_id"))
                     continue
 
-                result = sb.table("jobs").insert(job_data).execute()
+                result = sb.table("jobs_jobs").insert(job_data).execute()
                 created = result.data[0]
                 total_inserted += 1
 
