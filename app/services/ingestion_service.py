@@ -20,6 +20,7 @@ from app.ports.database_port import DatabasePort  # type: ignore
 from app.ports.embedding_port import EmbeddingPort  # type: ignore
 from app.scraper.scraper_port import ScraperPort  # type: ignore
 from app.services.enrichment_service import EnrichmentService  # type: ignore
+from app.services.telegram_service import TelegramService  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -39,10 +40,12 @@ class IngestionService:
         db: DatabasePort,
         ai: AIPort,
         embeddings: EmbeddingPort,
+        telegram: TelegramService = None,
     ) -> None:
         self._db = db
         self._ai = ai
         self._emb = embeddings
+        self._telegram = telegram
 
     async def ingest_jobs(self, scraper: ScraperPort) -> dict[str, Any]:
         """
@@ -82,12 +85,27 @@ class IngestionService:
             async with enrichment_sem:
                 enricher = EnrichmentService(db=self._db, ai=self._ai, embeddings=self._emb)
                 try:
-                    await enricher.enrich_job(job_id)
+                    enrichment = await enricher.enrich_job(job_id)
                     logger.info("Background enrichment finished: %s / %s", company, ext_id)
+                    
+                    # ── Push to Telegram Channel ──────────────────
+                    if self._telegram:
+                        job_data = await self._db.get_job(job_id)
+                        if job_data:
+                            # Overlay enrichment data in case DB update skipped missing columns
+                            if enrichment:
+                                if enrichment.estimated_salary_range:
+                                    job_data["salary_range"] = enrichment.estimated_salary_range
+                                if enrichment.qualification:
+                                    job_data["qualification"] = enrichment.qualification
+                                if enrichment.experience:
+                                    job_data["experience"] = enrichment.experience
+                                    
+                            await self._telegram.send_job_to_channel(job_data)
                 except Exception as e:
                     logger.warning("Background enrichment failed for %s: %s", job_id, e)
 
-        async def _process_job_batch(batch: list[dict[str, Any]]):
+        async def _process_job_batch(batch: Any):
             for job_data in batch:
                 company = job_data["company_name"]
                 ext_id = job_data["external_id"]

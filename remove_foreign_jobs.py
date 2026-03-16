@@ -1,10 +1,10 @@
 import asyncio
 import re
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # type: ignore
 
 load_dotenv()
 
-from app.dependencies import get_db
+from app.dependencies import get_db  # type: ignore
 
 async def main():
     db = get_db()
@@ -13,7 +13,7 @@ async def main():
     
     to_remove = []
 
-    for job in jobs:
+    for job in jobs:  # type: ignore
         title = job.get("title", "")
         desc_raw = job.get("description_raw", "")
         combo_text = title + " " + desc_raw

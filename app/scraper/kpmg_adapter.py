@@ -110,7 +110,7 @@ class KPMGAdapter(ScraperPort):
                                     qual = job_info.get("ExternalQualificationsStr") or ""
                                     
                                     # Combine parts with clear headers for enrichment
-                                    desc_parts = []
+                                    desc_parts: list[str] = []
                                     if desc: desc_parts.append(f"<h3>About the Role</h3>{desc}")
                                     if resp: desc_parts.append(f"<h3>Responsibilities</h3>{resp}")
                                     if qual: desc_parts.append(f"<h3>Requirements</h3>{qual}")

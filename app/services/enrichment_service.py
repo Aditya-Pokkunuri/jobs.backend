@@ -8,9 +8,10 @@ Production hardening:
 
 import logging
 
-from app.ports.ai_port import AIPort
-from app.ports.database_port import DatabasePort
-from app.ports.embedding_port import EmbeddingPort
+from app.ports.ai_port import AIPort  # type: ignore
+from app.ports.database_port import DatabasePort  # type: ignore
+from app.ports.embedding_port import EmbeddingPort  # type: ignore
+from app.domain.models import AIEnrichment  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ class EnrichmentService:
         self._ai = ai
         self._emb = embeddings
 
-    async def enrich_job(self, job_id: str) -> None:
+    async def enrich_job(self, job_id: str) -> AIEnrichment | None:
         """
         Synchronous (single-job) enrichment:
         1. Fetches the job record
@@ -40,7 +41,7 @@ class EnrichmentService:
             job = await self._db.get_job(job_id)
             if not job:
                 logger.error("Enrichment failed: job %s not found", job_id)
-                return
+                return None
 
             description = job["description_raw"]
             skills = job.get("skills_required") or []
@@ -62,22 +63,42 @@ class EnrichmentService:
             # Use extracted skills if the job has none (e.g. scraped jobs)
             final_skills = skills if skills else enrichment.extracted_skills
 
-            await self._db.update_job(
-                job_id,
-                {
-                    "resume_guide_generated": enrichment.resume_guide,
-                    "prep_guide_generated": prep_data,
-                    # "extracted_skills": enrichment.extracted_skills, # Column doesn't exist, so we don't save raw
-                    "skills_required": final_skills, # Populate main skills field if empty
-                    "embedding": embedding,
-                    "salary_range": enrichment.estimated_salary_range,
-                },
-            )
+            try:
+                await self._db.update_job(
+                    job_id,
+                    {
+                        "resume_guide_generated": enrichment.resume_guide,
+                        "prep_guide_generated": prep_data,
+                        "skills_required": final_skills,
+                        "embedding": embedding,
+                        "salary_range": enrichment.estimated_salary_range,
+                        "qualification": enrichment.qualification,
+                        "experience": enrichment.experience,
+                    },
+                )
+            except Exception as e:
+                # Fallback: if columns like 'experience' or 'qualification' don't exist, try updating without them
+                if "column" in str(e).lower() and ("experience" in str(e).lower() or "qualification" in str(e).lower()):
+                    logger.warning(f"Database schema mismatch for {job_id}. Retrying without extra fields. Error: {e}")
+                    await self._db.update_job(
+                        job_id,
+                        {
+                            "resume_guide_generated": enrichment.resume_guide,
+                            "prep_guide_generated": prep_data,
+                            "skills_required": final_skills,
+                            "embedding": embedding,
+                            "salary_range": enrichment.estimated_salary_range,
+                        },
+                    )
+                else:
+                    raise e
 
             logger.info("Enrichment complete for job %s", job_id)
+            return enrichment
 
         except Exception:
             logger.exception("Enrichment failed for job %s", job_id)
+            return None
 
     async def enrich_jobs_batch(self, job_ids: list[str]) -> str:
         """

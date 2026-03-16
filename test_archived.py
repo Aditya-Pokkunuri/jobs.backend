@@ -1,9 +1,9 @@
 import asyncio
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # type: ignore
 
 load_dotenv()
 
-from app.dependencies import get_db
+from app.dependencies import get_db  # type: ignore
 
 async def main():
     db = get_db()

@@ -4,17 +4,17 @@ User endpoints — thin HTTP layer, delegates all logic to services.
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, status  # type: ignore
+from fastapi.responses import JSONResponse  # type: ignore
 
-from app.dependencies import get_db, get_document_parser, get_embedding_service, get_storage, get_user_service
-from app.domain.models import ResumeDownloadResponse, ResumeUploadResponse, UserProfile
-from app.ports.database_port import DatabasePort
-from app.ports.document_port import DocumentPort
-from app.ports.embedding_port import EmbeddingPort
-from app.ports.storage_port import StoragePort
-from app.services.auth_service import get_current_user
-from app.services.user_service import UserService
+from app.dependencies import get_db, get_document_parser, get_embedding_service, get_storage, get_user_service  # type: ignore
+from app.domain.models import ResumeDownloadResponse, ResumeUploadResponse, UserProfile  # type: ignore
+from app.ports.database_port import DatabasePort  # type: ignore
+from app.ports.document_port import DocumentPort  # type: ignore
+from app.ports.embedding_port import EmbeddingPort  # type: ignore
+from app.ports.storage_port import StoragePort  # type: ignore
+from app.services.auth_service import get_current_user  # type: ignore
+from app.services.user_service import UserService  # type: ignore
 
 router = APIRouter(prefix="/users", tags=["Users"])
 

@@ -1,6 +1,6 @@
 import asyncio
-from app.scheduler import trigger_ingestion
-from dotenv import load_dotenv
+from app.scheduler import trigger_ingestion  # type: ignore
+from dotenv import load_dotenv  # type: ignore
 
 load_dotenv()
 

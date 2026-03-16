@@ -5,7 +5,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from app.scraper.generic_adapter import GenericAdapter
+from app.scraper.generic_adapter import GenericAdapter  # type: ignore
 
 async def test_scraper():
     adapter = GenericAdapter()
@@ -23,7 +23,7 @@ async def test_scraper():
     print(f"\n{'='*60}")
     print(f"Scrape completed! Found {len(jobs)} jobs.")
     print(f"{'='*60}")
-    for j in jobs:
+    for j in jobs:  # type: ignore
         print(f"\n [{j['company_name']}] {j['title']}")
         print(f"   URL: {j['external_apply_url']}")
         print(f"   Desc length: {len(j.get('description_raw', ''))}")

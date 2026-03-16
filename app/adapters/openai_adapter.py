@@ -2,11 +2,11 @@
 Concrete implementation of AIPort using OpenAI GPT-4o-mini + Instructor.
 """
 
-import instructor
-from openai import AsyncOpenAI
+import instructor  # type: ignore
+from openai import AsyncOpenAI  # type: ignore
 
-from app.domain.models import AIEnrichment, ChatMessage, MissingSkillsExtraction, MockScorecard
-from app.ports.ai_port import AIPort
+from app.domain.models import AIEnrichment, ChatMessage, MissingSkillsExtraction, MockScorecard  # type: ignore
+from app.ports.ai_port import AIPort  # type: ignore
 
 
 class OpenAIAdapter(AIPort):
@@ -43,7 +43,8 @@ class OpenAIAdapter(AIPort):
                         "For each interview question, provide a specific 'answer_strategy' "
                         "that explains EXACTLY what the interviewer is looking for and "
                         "what key technical concepts or experiences the candidate should highlight. "
-                        "ALSO, estimate the annual salary range for this role (e.g., '$120k - $160k') "
+                        "ALSO, identify and extract the required 'qualification' and 'experience' levels. "
+                        "ALSO, estimate the annual salary range for this role (prefer INR/LPA format like '₹4 LPA - ₹7 LPA') "
                         "based on the description or standard market rates for this title/company. "
                         "Be HIGHLY SPECIFIC to this exact role and company — "
                         "reference the company name, role title, and specific "
@@ -92,7 +93,7 @@ class OpenAIAdapter(AIPort):
                     "role": "user",
                     "content": (
                         f"## Required Skills\n{skills_text}\n\n"
-                        f"## Candidate Resume\n{resume_text[:3000]}\n\n" # Truncate for cost/speed
+                        f"## Candidate Resume\n{resume_text[:3000]}\n\n" # type: ignore # Truncate for cost/speed
                         "Extract the missing skills now."
                     ),
                 },
@@ -150,8 +151,8 @@ class OpenAIAdapter(AIPort):
             {
                 "role": "user",
                 "content": (
-                    f"## Job Description\n{job_description[:4000]}\n\n"
-                    f"## Candidate Resume\n{resume_text[:4000]}\n\n"
+                    f"## Job Description\n{job_description[:4000]}\n\n" # type: ignore
+                    f"## Candidate Resume\n{resume_text[:4000]}\n\n" # type: ignore
                     "Explain the gap briefly."
                 ),
             },
@@ -183,8 +184,8 @@ class OpenAIAdapter(AIPort):
             {
                 "role": "user",
                 "content": (
-                    f"## Target Job\n{job_description[:4000]}\n\n"
-                    f"## Current Resume\n{resume_text[:4000]}\n\n"
+                    f"## Target Job\n{job_description[:4000]}\n\n" # type: ignore
+                    f"## Current Resume\n{resume_text[:4000]}\n\n" # type: ignore
                     "Rewrite my resume now."
                 ),
             },
@@ -267,7 +268,7 @@ class OpenAIAdapter(AIPort):
                 {
                     "role": "user",
                     "content": (
-                        f"## Job Description\n{job_description[:3000]}\n\n"
+                        f"## Job Description\n{job_description[:3000]}\n\n" # type: ignore
                         f"## Interview Transcript\n{formatted}\n\n"
                         "Evaluate this candidate now."
                     ),

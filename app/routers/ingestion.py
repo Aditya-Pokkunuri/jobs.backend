@@ -4,14 +4,20 @@ Ingestion endpoints — admin-triggered external job scraping.
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
-
-from app.dependencies import get_ai_service, get_db, get_embedding_service, get_scraper
-from app.ports.ai_port import AIPort
-from app.ports.database_port import DatabasePort
-from app.ports.embedding_port import EmbeddingPort
-from app.services.auth_service import get_current_user
-from app.services.ingestion_service import IngestionService
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks  # type: ignore
+ 
+from app.dependencies import (  # type: ignore
+    get_ai_service, 
+    get_db, 
+    get_embedding_service, 
+    get_scraper,
+    get_ingestion_service
+)
+from app.ports.ai_port import AIPort  # type: ignore
+from app.ports.database_port import DatabasePort  # type: ignore
+from app.ports.embedding_port import EmbeddingPort  # type: ignore
+from app.services.auth_service import get_current_user  # type: ignore
+from app.services.ingestion_service import IngestionService  # type: ignore
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -29,7 +35,7 @@ async def ingest_all_sources(
         )
 
     # We run this in background because it takes a while
-    from app.scheduler import run_daily_ingestion
+    from app.scheduler import run_daily_ingestion  # type: ignore
     background_tasks.add_task(run_daily_ingestion)
 
     return {"message": "Global ingestion triggered in background"}
@@ -39,9 +45,7 @@ async def ingest_all_sources(
 async def trigger_ingestion(
     source_name: str,
     current_user: dict[str, Any] = Depends(get_current_user),
-    db: DatabasePort = Depends(get_db),
-    ai: AIPort = Depends(get_ai_service),
-    emb: EmbeddingPort = Depends(get_embedding_service),
+    svc: IngestionService = Depends(get_ingestion_service),
 ):
     """
     Admin-only: trigger external job ingestion from a named source.
@@ -65,7 +69,6 @@ async def trigger_ingestion(
             f"Available: deloitte, pwc, kpmg, ey",
         )
 
-    svc = IngestionService(db=db, ai=ai, embeddings=emb)
     stats = await svc.ingest_jobs(scraper)
 
     return {

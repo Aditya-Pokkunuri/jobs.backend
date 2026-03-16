@@ -155,3 +155,34 @@ def get_user_service(
 ) -> UserService:
     """Injects all ports into user domain service."""
     return UserService(db=db, doc_parser=doc, embeddings=emb, storage=storage)
+
+
+from app.services.job_service import JobService  # type: ignore
+
+
+def get_job_service(db: DatabasePort = Depends(get_db)) -> JobService:
+    """Injects DB adapter into job service."""
+    return JobService(db=db)
+
+
+from app.services.telegram_service import TelegramService  # type: ignore
+
+
+def get_telegram_service(
+    job_service: JobService = Depends(get_job_service),
+) -> TelegramService:
+    """Injects JobService into TelegramService."""
+    return TelegramService(job_service=job_service)
+
+
+from app.services.ingestion_service import IngestionService  # type: ignore
+
+
+def get_ingestion_service(
+    db: DatabasePort = Depends(get_db),
+    ai: AIPort = Depends(get_ai_service),
+    emb: EmbeddingPort = Depends(get_embedding_service),
+    telegram: TelegramService = Depends(get_telegram_service),
+) -> IngestionService:
+    """Injects all ports and TelegramService into IngestionService."""
+    return IngestionService(db=db, ai=ai, embeddings=emb, telegram=telegram)

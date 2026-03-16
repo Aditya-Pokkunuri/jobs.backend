@@ -15,20 +15,27 @@ logging.basicConfig(
     ]
 )
 
-sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+sys.stdout.reconfigure(encoding='utf-8', errors='replace')  # type: ignore
 sys.path.insert(0, os.getcwd())
 
 async def main():
-    from app.dependencies import _get_supabase_client, get_ai_service, get_embedding_service
-    from app.adapters.supabase_adapter import SupabaseAdapter
-    from app.services.ingestion_service import IngestionService
-    from app.scraper.generic_adapter import GenericAdapter
+    from app.dependencies import (
+        get_db, 
+        get_ai_service, 
+        get_embedding_service, 
+        get_job_service, 
+        get_telegram_service
+    )  # type: ignore
+    from app.scraper.generic_adapter import GenericAdapter  # type: ignore
 
-    client = _get_supabase_client()
-    db = SupabaseAdapter(client)
+    db = get_db()
     ai = get_ai_service()
     emb = get_embedding_service()
-    service = IngestionService(db, ai, emb)
+    job_svc = get_job_service(db)
+    telegram_svc = get_telegram_service(job_svc)
+    
+    from app.services.ingestion_service import IngestionService # type: ignore
+    service = IngestionService(db, ai, emb, telegram_svc)
     
     scraper = GenericAdapter()
     

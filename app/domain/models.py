@@ -8,9 +8,9 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field  # type: ignore
 
-from app.domain.enums import ChatStatus, UserRole, MockInterviewStatus
+from app.domain.enums import ChatStatus, UserRole, MockInterviewStatus  # type: ignore
 
 
 # ── User ──────────────────────────────────────────────────────
@@ -146,7 +146,15 @@ class AIEnrichment(BaseModel):
     )
     estimated_salary_range: str | None = Field(
         None,
-        description="Estimated annual salary range (e.g. '$100k - $150k') based on title and market data if not explicitly stated.",
+        description="Estimated annual salary range (e.g. '₹4 LPA - ₹7 LPA') based on title and market data if not explicitly stated.",
+    )
+    qualification: str | None = Field(
+        None,
+        description="Educational qualification required (e.g. 'B.E/B.Tech', 'MBA', 'Any Graduate')",
+    )
+    experience: str | None = Field(
+        None,
+        description="Years of experience required or 'Freshers'",
     )
 
 

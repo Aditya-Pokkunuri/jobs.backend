@@ -4,11 +4,11 @@ Routes through the backend to bypass Supabase's free-tier rate limits.
 """
 
 import logging
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr  # type: ignore
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status  # type: ignore
 
-from app.config import settings
+from app.config import settings  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ _admin_client = None
 def _get_admin_client():
     global _admin_client
     if _admin_client is None:
-        from supabase import create_client
+        from supabase import create_client  # type: ignore
         _admin_client = create_client(
             settings.supabase_url,
             settings.supabase_service_role_key,
@@ -125,13 +125,13 @@ async def signup(req: SignUpRequest):
                 detail="User created but sign-in failed. Try logging in manually.",
             )
 
-        return AuthResponse(
-            access_token=session.access_token,
-            refresh_token=session.refresh_token,
-            user_id=user.id,
-            email=req.email,
-            role=req.role,
-        )
+        return AuthResponse(**{  # type: ignore
+            "access_token": session.access_token,
+            "refresh_token": session.refresh_token,
+            "user_id": user.id,
+            "email": req.email,
+            "role": req.role,
+        })
 
     except HTTPException:
         raise
@@ -182,13 +182,13 @@ async def login(req: SignInRequest):
         )
         role = profile.data.get("role") if profile and profile.data else None
 
-        return AuthResponse(
-            access_token=session.access_token,
-            refresh_token=session.refresh_token,
-            user_id=user.id,
-            email=req.email,
-            role=role,
-        )
+        return AuthResponse(**{  # type: ignore
+            "access_token": session.access_token,
+            "refresh_token": session.refresh_token,
+            "user_id": user.id,
+            "email": req.email,
+            "role": role,
+        })
 
     except HTTPException:
         raise

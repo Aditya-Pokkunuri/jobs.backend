@@ -12,14 +12,19 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Optional
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
+from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
+from apscheduler.triggers.cron import CronTrigger  # type: ignore
 
-from app.dependencies import get_all_scrapers
-from app.services.ingestion_service import IngestionService
-# Import dependencies explicitly for manual resolution
-from app.dependencies import _get_supabase_client, get_ai_service, get_embedding_service
-from app.adapters.supabase_adapter import SupabaseAdapter
+from app.dependencies import get_all_scrapers  # type: ignore
+from app.services.ingestion_service import IngestionService  # type: ignore
+from app.dependencies import (
+    get_db, 
+    get_ai_service, 
+    get_embedding_service, 
+    get_job_service, 
+    get_telegram_service,
+    _get_supabase_client
+)  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -93,12 +98,13 @@ async def trigger_ingestion(scraper_name: Optional[str] = None):
     logger.info(f"🕒 Starting ingestion process (target: {scraper_name or 'ALL'})...")
 
     # Manually resolve dependencies
-    client = _get_supabase_client()
-    db = SupabaseAdapter(client)
+    db = get_db()
     ai = get_ai_service()
     emb = get_embedding_service()
+    job_svc = get_job_service(db)
+    telegram_svc = get_telegram_service(job_svc)
     
-    service = IngestionService(db, ai, emb)
+    service = IngestionService(db, ai, emb, telegram_svc)
     all_scrapers = get_all_scrapers()
     
     # Filter scrapers if a specific name is requested

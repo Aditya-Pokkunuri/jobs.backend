@@ -6,8 +6,8 @@ from urllib.parse import urlparse
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from bs4 import BeautifulSoup
-from playwright.async_api import async_playwright
+from bs4 import BeautifulSoup  # type: ignore
+from playwright.async_api import async_playwright  # type: ignore
 
 async def debug_links():
     url = "https://careers.microsoft.com"
