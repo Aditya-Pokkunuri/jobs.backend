@@ -71,9 +71,13 @@ class UserService:
 
         # Step 2: Extract text from document
         text = await self._doc.extract_text(file_bytes, ext)
-        if not text.strip():
+        extracted_len = len(text.strip())
+        print(f"DEBUG: Extracted {extracted_len} characters from {file_name}")
+        
+        if extracted_len < 50:
             raise ValueError(
-                f"Could not extract any text from the uploaded .{ext} file"
+                f"Could not extract sufficient text from the uploaded .{ext} file (only {extracted_len} chars found). "
+                "The document may be a scan or image-based. Please upload a text-based PDF or DOCX."
             )
 
         # Step 3: Generate embedding

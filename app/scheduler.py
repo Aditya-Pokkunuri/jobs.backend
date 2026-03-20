@@ -22,7 +22,7 @@ from app.dependencies import (
     get_ai_service, 
     get_embedding_service, 
     get_job_service, 
-    get_telegram_service,
+    get_telegram_channel_service,
     _get_supabase_client
 )  # type: ignore
 
@@ -102,7 +102,7 @@ async def trigger_ingestion(scraper_name: Optional[str] = None):
     ai = get_ai_service()
     emb = get_embedding_service()
     job_svc = get_job_service(db)
-    telegram_svc = get_telegram_service(job_svc)
+    telegram_svc = get_telegram_channel_service()
     
     service = IngestionService(db, ai, emb, telegram_svc)
     all_scrapers = get_all_scrapers()

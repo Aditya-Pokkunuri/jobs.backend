@@ -17,11 +17,21 @@ class SupabaseStorageAdapter(StoragePort):
         self, bucket: str, path: str, file_bytes: bytes, content_type: str
     ) -> str:
         """Upload file to Supabase Storage and return the path."""
-        self._client.storage.from_(bucket).upload(
-            path=path,
-            file=file_bytes,
-            file_options={"content-type": content_type, "upsert": "true"},
-        )
+        try:
+            self._client.storage.from_(bucket).upload(
+                path=path,
+                file=file_bytes,
+                file_options={"content-type": content_type, "upsert": True},
+            )
+        except Exception as e:
+            # Check for common "Bucket not found" or "Resource not found" errors
+            err_msg = str(e).lower()
+            if "not found" in err_msg or "bucket" in err_msg:
+                raise ValueError(
+                    f"Storage bucket '{bucket}' not found on Supabase. "
+                    "Please create it in your Supabase dashboard first."
+                )
+            raise e
         return path
 
     async def get_signed_url(

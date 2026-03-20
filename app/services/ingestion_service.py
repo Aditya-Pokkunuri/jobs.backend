@@ -20,7 +20,10 @@ from app.ports.database_port import DatabasePort  # type: ignore
 from app.ports.embedding_port import EmbeddingPort  # type: ignore
 from app.scraper.scraper_port import ScraperPort  # type: ignore
 from app.services.enrichment_service import EnrichmentService  # type: ignore
-from app.services.telegram_service import TelegramService  # type: ignore
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from app.services.telegram_channel_service import TelegramChannelService  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +43,7 @@ class IngestionService:
         db: DatabasePort,
         ai: AIPort,
         embeddings: EmbeddingPort,
-        telegram: TelegramService = None,
+        telegram: "TelegramChannelService | None" = None,
     ) -> None:
         self._db = db
         self._ai = ai
@@ -75,6 +78,9 @@ class IngestionService:
             "errors": 0, "dedup_hits": 0,
         }
 
+        # Queue to collect all enriched/new jobs for rapid Telegram broadcasting at the end
+        telegram_queue = []
+
         # ── Step 1 & 2: Fetch and Process (Incremental Support) ──────
         active_ids_by_company = {}
 
@@ -87,12 +93,12 @@ class IngestionService:
                 try:
                     enrichment = await enricher.enrich_job(job_id)
                     logger.info("Background enrichment finished: %s / %s", company, ext_id)
-                    
-                    # ── Push to Telegram Channel ──────────────────
+
+                    # ── Queue for Telegram Channel ──────────────────
                     if self._telegram:
                         job_data = await self._db.get_job(job_id)
                         if job_data:
-                            # Overlay enrichment data in case DB update skipped missing columns
+                            # Overlay enrichment fields that may not yet be persisted
                             if enrichment:
                                 if enrichment.estimated_salary_range:
                                     job_data["salary_range"] = enrichment.estimated_salary_range
@@ -100,8 +106,7 @@ class IngestionService:
                                     job_data["qualification"] = enrichment.qualification
                                 if enrichment.experience:
                                     job_data["experience"] = enrichment.experience
-                                    
-                            await self._telegram.send_job_to_channel(job_data)
+                            telegram_queue.append(job_data)
                 except Exception as e:
                     logger.warning("Background enrichment failed for %s: %s", job_id, e)
 
@@ -192,6 +197,10 @@ class IngestionService:
                             })
                             stats["new"] += 1
                             stats["dedup_hits"] += 1
+                            if self._telegram:
+                                job_data = await self._db.get_job(created["id"])
+                                if job_data:
+                                    telegram_queue.append(job_data)
                             continue
 
                     # Run enrichment (updates the fields, status remains active)
@@ -246,7 +255,15 @@ class IngestionService:
             logger.info("Waiting for %d background enrichment tasks to finish...", len(enrichment_tasks))
             await asyncio.gather(*enrichment_tasks, return_exceptions=True)
 
-        # ── Step 4: Finalize log ──────────────────────────────
+        # ── Fast Telegram Broadcasting ────────────────────────
+        if self._telegram and telegram_queue:
+            logger.info("Blasting %d jobs to Telegram channel...", len(telegram_queue))
+            for i, job in enumerate(telegram_queue):
+                await self._telegram.post_job(job)
+                if i < len(telegram_queue) - 1:
+                    await asyncio.sleep(0.1)
+
+        # ── Step 5: Finalize log ──────────────────────────────
         final_status = "success"
         if stats["errors"] > 0 and stats["new"] > 0:
             final_status = "partial"

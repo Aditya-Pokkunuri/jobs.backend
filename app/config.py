@@ -29,11 +29,12 @@ class Settings(BaseSettings):
     debug: bool = False
     frontend_url: str = "http://localhost:5173"
 
-    # ── Telegram ──────────────────────────────────────────────
+    # ── Channels ──────────────────────────────────────────────
+    whatsapp_channel_url: str = "https://whatsapp.com/channel/..."
+
+    # ── Telegram Channel Broadcast ────────────────────────────
     telegram_bot_token: str | None = None
     telegram_channel_id: str | None = None
-    whatsapp_channel_url: str = "https://whatsapp.com/channel/..."
-    telegram_channel_url: str = "https://t.me/..."
 
 
 # Singleton — import this wherever config is needed

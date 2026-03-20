@@ -165,14 +165,12 @@ def get_job_service(db: DatabasePort = Depends(get_db)) -> JobService:
     return JobService(db=db)
 
 
-from app.services.telegram_service import TelegramService  # type: ignore
+from app.services.telegram_channel_service import TelegramChannelService  # type: ignore
 
 
-def get_telegram_service(
-    job_service: JobService = Depends(get_job_service),
-) -> TelegramService:
-    """Injects JobService into TelegramService."""
-    return TelegramService(job_service=job_service)
+def get_telegram_channel_service() -> TelegramChannelService:
+    """Injects the Telegram channel broadcast service."""
+    return TelegramChannelService()
 
 
 from app.services.ingestion_service import IngestionService  # type: ignore
@@ -182,7 +180,7 @@ def get_ingestion_service(
     db: DatabasePort = Depends(get_db),
     ai: AIPort = Depends(get_ai_service),
     emb: EmbeddingPort = Depends(get_embedding_service),
-    telegram: TelegramService = Depends(get_telegram_service),
+    telegram: TelegramChannelService = Depends(get_telegram_channel_service),
 ) -> IngestionService:
-    """Injects all ports and TelegramService into IngestionService."""
+    """Injects all ports and TelegramChannelService into IngestionService."""
     return IngestionService(db=db, ai=ai, embeddings=emb, telegram=telegram)
