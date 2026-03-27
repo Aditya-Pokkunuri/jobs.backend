@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     # ── App ───────────────────────────────────────────────────
     app_name: str = "jobs.ottobon.cloud"
     debug: bool = False
-    frontend_url: str = "http://localhost:5173"
+    frontend_url: str = "https://jobs.ottobon.cloud"
 
     # ── Channels ──────────────────────────────────────────────
     whatsapp_channel_url: str = "https://whatsapp.com/channel/..."
