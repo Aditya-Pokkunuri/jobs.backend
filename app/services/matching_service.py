@@ -42,7 +42,12 @@ class MatchingService:
         user_vec = self._parse_vector(user["resume_embedding"])
         job_vec = self._parse_vector(job["embedding"])
 
-        score = self._cosine_similarity(user_vec, job_vec)
+        raw_score = self._cosine_similarity(user_vec, job_vec)
+        
+        # Artificial multiplier to boost embedding scores closer to 100%
+        # because 0.85 cosine similarity represents an essentially perfect text match.
+        score = min(raw_score * 1.15, 0.99)
+        
         gap_detected = score < self.GAP_THRESHOLD
         
         gap_analysis = None
