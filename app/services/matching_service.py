@@ -44,9 +44,17 @@ class MatchingService:
 
         raw_score = self._cosine_similarity(user_vec, job_vec)
         
-        # Artificial multiplier to boost embedding scores closer to 100%
-        # because 0.85 cosine similarity represents an essentially perfect text match.
-        score = min(raw_score * 1.15, 0.99)
+        # Artificial piecewise multiplier to boost embedding scores closer to 100%
+        # because ~0.60 cosine similarity represents a highly tailored text match.
+        if raw_score >= 0.58:
+            # Map raw [0.58, 0.85] explicitly to visual [0.70, 0.98]
+            boosted = 0.70 + ((raw_score - 0.58) / 0.27) * 0.28
+            score = min(boosted, 0.99)
+        else:
+            # Keep weak resumes proportionally low
+            score = raw_score * 1.15
+        
+        score = min(score, 0.99)
         
         gap_detected = score < self.GAP_THRESHOLD
         

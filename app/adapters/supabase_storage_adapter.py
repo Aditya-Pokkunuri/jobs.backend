@@ -21,7 +21,7 @@ class SupabaseStorageAdapter(StoragePort):
             self._client.storage.from_(bucket).upload(
                 path=path,
                 file=file_bytes,
-                file_options={"content-type": content_type, "upsert": True},
+                file_options={"content-type": content_type, "upsert": "true"},
             )
         except Exception as e:
             # Check for common "Bucket not found" or "Resource not found" errors
